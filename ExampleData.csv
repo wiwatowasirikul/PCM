@@ -1,4 +1,4 @@
-Smiles,pH,Sand (%),Silt (%),Clay (%),Soil Organic Carbon (%),CEC (cmol/kg),Total Nitrogen (%),Moisture content (%),log K(OC)
+MolSmiles,pH,Sand (%),Silt (%),Clay (%),Soil Organic Carbon (%),CEC (cmol/kg),Total Nitrogen (%),Moisture content (%),log K(OC)
 COCCOC(=O)C1=CC=CC=C1C(=O)OCCOC,4.88,18.95,45.1,35.95,0.64,10.07,0.091,1.73,1.95
 COC(=O)C1=CC=CC=C1C(=O)OC,4.88,18.95,45.1,35.95,0.64,10.07,0.091,1.73,1.43
 CCOC(=O)C1=CC=CC=C1C(=O)OCC,4.88,18.95,45.1,35.95,0.64,10.07,0.091,1.73,1.65

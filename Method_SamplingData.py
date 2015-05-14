@@ -63,5 +63,5 @@ def CV_determination(Y, Method):
     else:
         ind_k = [ind for ind,val in enumerate(list(Method)) if val == '-']
         k = int(Method[:ind_k[0]])
-        kf = KFold(len(Y), k, indices=True, shuffle=True, random_state=1)
+        kf = KFold(len(Y), k, shuffle=True, random_state=1)
     return kf
