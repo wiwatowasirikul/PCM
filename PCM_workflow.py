@@ -217,7 +217,6 @@ def Model_Selection(user):
     h_num =  np.reshape(np.array(h_list),(1,6))
     #########################################################################    
     if Descriptors_Selection == 'None':
-        print h_num.shape
         NumDes = np.append(h_num,NumDes,axis=0)
         harray = Var_header
     elif Descriptors_Selection == 'VIP':

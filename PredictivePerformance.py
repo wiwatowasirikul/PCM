@@ -128,7 +128,7 @@ def AnalysisPerformance3D(YkeepAll, SumPer, m_re, user):
     unique, counts = np.unique(np.array(C), return_counts=True)
     D = [ind for ind ,val in enumerate(counts) if val == np.max(counts)]
     if len(D) > 1:
-        D = unique(D[0])
+        D = np.unique(D[0])
 
     Y = YkeepAll[:,:,D[0]]
     

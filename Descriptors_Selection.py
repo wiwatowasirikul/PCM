@@ -18,7 +18,7 @@ def VIP(X, Y, H, NumDes):
     NumDesVIP = np.zeros((13,6), dtype=int)
     for kk in M:
         Xtrain, Ytrain = X[kk], Y
-        kf = KFold(len(Ytrain), 10, indices=True, shuffle=True, random_state=1)
+        kf = KFold(len(Ytrain), 10, shuffle=True, random_state=1)
         HH = H[kk] 
         nrow, ncol = np.shape(Xtrain)
         
