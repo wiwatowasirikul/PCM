@@ -46,8 +46,23 @@ def VIP(X, Y, H, NumDes):
             q=sum(d)
             vip.append(np.sqrt(p*q/s))
     
-        idx_keep = [idx for idx, val in enumerate(vip) if vip[idx] >= 1]
+        idx_keep = [idx for idx, val in enumerate(vip) if val >= 1]
+        vvip = np.array(vip)[idx_keep]
     
+        ##### Reduction of descriptor into the highest 10 order #########
+        mapp = []        
+        for p in range(len(vvip)):
+            mapp.append((vvip[p], idx_keep[p]))
+
+        mapp_sort = sorted(mapp)
+        mapp_select = mapp_sort[-10:]
+        
+        
+        idx_keep = []
+        for pp in range(len(mapp_select)):
+            idx_keep.append(mapp_select[pp][1])
+        #############################################
+        
         idxDes = NumDes[int(kk[6:])-1,:]
         L,P,LxP,LxL,PxP = [],[],[],[],[] 
         for idx in idx_keep:
@@ -70,11 +85,12 @@ def VIP(X, Y, H, NumDes):
         H_VIP[kk] = hvip
         X_VIP[kk] = Xtrain[:,idx_keep]   
         Y_VIP = Ytrain
-        
+    
         hvip = np.reshape(hvip,(len(hvip),1))
         vvip = np.reshape(vvip, (len(vvip),1))
         
         HArray[kk] = np.append(hvip, vvip, axis=1)
+        
   
     return X_VIP, Y_VIP, H_VIP, HArray, NumDesVIP
     
