@@ -5,64 +5,77 @@ Created on Thu Jul 17 09:19:41 2014
 @author: Fujitsu
 """
 
-def VIP(X, Y, H, NumDes): 
-    from sklearn.cross_decomposition import PLSRegression
+def VIP(X, Y, H, NumDes, user): 
     import numpy as np
     from sklearn.cross_validation import KFold
     import PCM_workflow as PW
+    from Descriptors_Selection import Ranking10
+    import Optimize_Parameters as OP
     
-    print '############## VIP is being processed ###############'
+    
+    print '############## Descriptors selection are being processed ###############'
     M = list(X.viewkeys())
     
     H_VIP, X_VIP, Y_VIP, HArray = {},{},{},{}
     NumDesVIP = np.zeros((13,6), dtype=int)
     for kk in M:
-        Xtrain, Ytrain = X[kk], Y
-        kf = KFold(len(Ytrain), 10, shuffle=True, random_state=1)
+        XTR, YTR = X[kk], Y
+        kf = KFold(len(YTR), 10, shuffle=True, random_state=1)
         HH = H[kk] 
-        nrow, ncol = np.shape(Xtrain)
+        nrow, ncol = np.shape(XTR)
         
-        ArrayYpredCV, Q2, RMSE_CV, OptimalPC = PW.CV_Processing(Xtrain,Ytrain,kf)
+        if user['Predictor'] == 'PLS':
+            YpCV,Q2,RMSE_CV,estimator = OP.PLS(XTR,YTR,kf)
     
-        plsmodel = PLSRegression(n_components=OptimalPC)
-        plsmodel.fit(Xtrain,Ytrain)
-        x_scores = plsmodel.x_scores_
-        x_weighted = plsmodel.x_weights_
-        m, p = nrow, ncol
-        m, h = np.shape(x_scores)
-        p, h = np.shape(x_weighted)
-        X_S, X_W = x_scores, x_weighted
+            Ytruetr,Ypredtr,R2,RMSE_tr = PW.Prediction_processing(XTR,YTR,estimator.fit(XTR,YTR)) 
+            x_scores = estimator.x_scores_
+            x_weighted = estimator.x_weights_
+            m, p = nrow, ncol
+            m, h = np.shape(x_scores)
+            p, h = np.shape(x_weighted)
+            X_S, X_W = x_scores, x_weighted
 
-        co=[]
-        for i in range(h):
-            corr = np.corrcoef(np.squeeze(Ytrain), X_S[:,i])
-            co.append(corr[0][1]**2)
-        s = sum(co)
-        vip=[]
-        for j in range(p):
-            d=[]
-            for k in range(h):
-                d.append(co[k]*X_W[j,k]**2)
-            q=sum(d)
-            vip.append(np.sqrt(p*q/s))
+            co=[]
+            for i in range(h):
+                corr = np.corrcoef(np.squeeze(YTR), X_S[:,i])
+                co.append(corr[0][1]**2)
+            s = sum(co)
+            vip=[]
+            for j in range(p):
+                d=[]
+                for k in range(h):
+                    d.append(co[k]*X_W[j,k]**2)
+                q=sum(d)
+                vip.append(np.sqrt(p*q/s))
     
-        idx_keep = [idx for idx, val in enumerate(vip) if val >= 1]
-        vvip = np.array(vip)[idx_keep]
-    
-        ##### Reduction of descriptor into the highest 10 order #########
-        mapp = []        
-        for p in range(len(vvip)):
-            mapp.append((vvip[p], idx_keep[p]))
+            idx_keep = [idx for idx, val in enumerate(vip) if val >= 1]
+            vvip = np.array(vip)[idx_keep]
+            idx_keep = Ranking10(idx_keep,vvip)
+            
+        elif user['Predictor'] == 'RF':
+            YpCV,Q2,RMSE_CV,estimator = OP.RF(XTR,YTR,kf,user)
+            vip = estimator.feature_importances_
+            idx_keep = range(len(vip))
+            idx_keep = Ranking10(idx_keep,vip)
+            
+        elif user['Predictor'] == 'SVM':
+            from sklearn.feature_selection import SelectKBest
+            YpCV,Q2,RMSE_CV,estimator = OP.SVM(XTR,YTR,kf,user)
 
-        mapp_sort = sorted(mapp)
-        mapp_select = mapp_sort[-10:]
-        
-        
-        idx_keep = []
-        for pp in range(len(mapp_select)):
-            idx_keep.append(mapp_select[pp][1])
-        #############################################
-        
+            if user['Datatype'] == 'Regression':
+                from sklearn.feature_selection import f_regression
+                X_new = SelectKBest(f_regression).fit_transform(XTR,YTR)
+            if user['Datatype'] == 'Classification 2 classes':
+                from sklearn.feature_selection import f_classif
+                X_new = SelectKBest(f_classif).fit_transform(XTR,YTR)
+                
+            vip = range(XTR.shape[1])
+            idx_keep = []
+            for i in range(X_new.shape[1]):
+                A = X_new[:,i]
+                idx_keep.extend([ind for ind,val in enumerate(np.transpose(XTR)) if (val==A).all()])
+            
+            
         idxDes = NumDes[int(kk[6:])-1,:]
         L,P,LxP,LxL,PxP = [],[],[],[],[] 
         for idx in idx_keep:
@@ -83,16 +96,32 @@ def VIP(X, Y, H, NumDes):
         hvip = np.array(HH)[idx_keep]
         vvip = np.array(vip)[idx_keep]
         H_VIP[kk] = hvip
-        X_VIP[kk] = Xtrain[:,idx_keep]   
-        Y_VIP = Ytrain
+        X_VIP[kk] = XTR[:,idx_keep]   
+        Y_VIP = YTR
     
         hvip = np.reshape(hvip,(len(hvip),1))
         vvip = np.reshape(vvip, (len(vvip),1))
         
         HArray[kk] = np.append(hvip, vvip, axis=1)
         
-  
     return X_VIP, Y_VIP, H_VIP, HArray, NumDesVIP
+    
+    
+def Ranking10(index, value):
+     ##### Reduction of descriptor into the highest 10 order #########
+    mapp = []        
+    for p in range(len(value)):
+        mapp.append((value[p], index[p]))
+
+    mapp_sort = sorted(mapp)
+    mapp_select = mapp_sort[-10:]
+        
+    idx_keep = []
+    for pp in range(len(mapp_select)):
+        idx_keep.append(mapp_select[pp][1])
+    
+    return idx_keep
+
     
 def VarinceThreshold(X):
     import numpy as np

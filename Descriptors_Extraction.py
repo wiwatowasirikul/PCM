@@ -4,7 +4,7 @@ Created on Fri Jun 13 10:08:00 2014
 
 @author: Fujitsu
 """
-def UserDefined(Rawfile,Indicator,Ligand_index,Protein_index, Model_index,SpiltCriteria,
+def UserDefined(Rawfile,Indicator,Ligand_index,Protein_index, Model_index,Predictor,SpiltCriteria,
                CV_Method,FeatureSelectionMode, Iteration, NumPermute):
     import os
     user = {}
@@ -14,6 +14,7 @@ def UserDefined(Rawfile,Indicator,Ligand_index,Protein_index, Model_index,SpiltC
     user['Ligand_index'] = Ligand_index[1:-1].split(',')
     user['Protein_index'] = Protein_index[1:-1].split(',')
     user['Model_index'] = Model_index[1:-1].split(',')
+    user['Predictor'] = Predictor
     user['Spiltcriteria'] = SpiltCriteria
     user['CV_Method'] = CV_Method
     user['SelectionMode'] = FeatureSelectionMode

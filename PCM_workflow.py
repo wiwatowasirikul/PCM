@@ -216,13 +216,14 @@ def Model_Selection(user):
     h_list = ['L','P','LxP','LxL','PxP','Total']
     h_num =  np.reshape(np.array(h_list),(1,6))
     #########################################################################    
-    if Descriptors_Selection == 'None':
+    if Descriptors_Selection == 'No':
         NumDes = np.append(h_num,NumDes,axis=0)
         harray = Var_header
-    elif Descriptors_Selection == 'VIP':
+    elif Descriptors_Selection == 'Yes':
         from Descriptors_Selection import VIP
-        Var_X, Var_Y, Var_header, harray, NumDes = VIP(Var_X, Var_Y, Var_header, NumDes)
+        Var_X, Var_Y, Var_header, harray, NumDes = VIP(Var_X, Var_Y, Var_header, NumDes, user)
         NumDes = np.append(h_num,NumDes,axis=0)
+        
     return  Var_X, Var_Y, Var_header, harray, NumDes 
         
 def Index_Train_Ext(X, user):
@@ -252,13 +253,16 @@ def Prediction(XM, Y, ind_ext, user):
     Criteria = user['Spiltcriteria']
     CV_Method = user['CV_Method']
     Iter = user['Iteration']
+    Predictor = user['Predictor']
     import numpy as np
     import Method_SamplingData as MS
     import PredictivePerformance as PP
     import PCM_workflow as PW 
     from sklearn import cross_validation 
+    import Optimize_Parameters as OP
+    
    
-    print '############## PLS prediction is being processed ###############'
+    print '############## Prediction is being processed ###############'
     M = list(XM.viewkeys())
     m_re = []
     for m in M:
@@ -292,43 +296,58 @@ def Prediction(XM, Y, ind_ext, user):
             X = XM[ind_M] 
          
             mR2, mQ2, mP2, mRMSE_tr, mRMSE_CV, mRMSE_ext = [],[],[],[],[],[]
-            mYpredtr, mYpredCV, mYpredext = [],[],[]
-            mYtruetr, mYtrueext = [] ,[]
+            mYptr, mYpCV, mYpext = [],[],[]
+
             for TR, ext in kfext:   ##Inner cross-validation
                 
                 XTR, YTR = X[TR], Y[TR]
                 Xext,Yext = X[ext], Y[ext]
                 kf = MS.CV_determination(YTR,CV_Method)
                 
-                YpredCV,Q2,RMSE_CV,OptimalPC = PW.CV_Processing(XTR,YTR,kf)
-                Ypredtr,R2,RMSE_tr = PW.Train__or_ext_processing(XTR,YTR,OptimalPC) 
-                Ypredext,P2,RMSE_ext = PW.Train__or_ext_processing(Xext,Yext,OptimalPC)
+                #######################  CV processing #######################
+                if Predictor == 'PLS':
+                    YpCV,Q2,RMSE_CV,estimator = OP.PLS(XTR,YTR,kf,user)
+                    
+                elif Predictor == 'RF':
+                    YpCV,Q2,RMSE_CV,estimator = OP.RF(XTR,YTR,kf,user)
+                    
+                elif Predictor == 'SVM':
+                    YpCV,Q2,RMSE_CV,estimator = OP.SVM(XTR,YTR,kf, user)
+                
+                ##############################################################
+                
+                Ytruetr,Ypredtr,R2,RMSE_tr = PW.Prediction_processing(XTR,YTR,estimator.fit(XTR,YTR)) 
+                Ytrueext,Ypredext,P2,RMSE_ext = PW.Prediction_processing(Xext,Yext,estimator.fit(XTR,YTR)) 
+                
+                Yptr = np.append(np.reshape(Ytruetr,(len(Ytruetr),1)),np.reshape(Ypredtr,(len(Ypredtr),1)),axis=1)
+                Ypext = np.append(np.reshape(Ytrueext,(len(Ytrueext),1)),np.reshape(Ypredext,(len(Ypredext),1)),axis=1)
+                
                 #### Keep performance ####
                 mR2.append(R2), mQ2.append(Q2), mP2.append(P2)
                 mRMSE_tr.append(RMSE_tr), mRMSE_CV.append(RMSE_CV), mRMSE_ext.append(RMSE_ext)
                 
-                mYpredtr.append(Ypredtr)
-                mYpredCV.append(YpredCV[:,OptimalPC])
-                mYpredext.append(Ypredext)
-                
-                mYtruetr.append(YTR), mYtrueext.append(Yext)
+                mYptr.append(Yptr), mYpCV.append(YpCV), mYpext.append(Ypext)
 
             iMaxQ2 = [ind for ind, val in enumerate(mQ2) if val == np.max(mQ2)]
+            maxYtr = mYptr[iMaxQ2[0]]
+            maxYCV = mYpCV[iMaxQ2[0]]
+            maxYext = mYpext[iMaxQ2[0]]
             
-            maxYtruetr, maxYpredtr = mYtruetr[iMaxQ2[0]], mYpredtr[iMaxQ2[0]]
-            maxYpredCV = mYpredCV[iMaxQ2[0]]
-            maxYtrueext, maxYpredext = mYtrueext[iMaxQ2[0]], mYpredext[iMaxQ2[0]]  
+            if Predictor == 'PLS' and user['Datatype'] == 'Classification 2 classes':
+                maxYCV, classCV = PW.Classify_using_threholding2(maxYCV)
+                maxYtr, classtr = PW.Classify_using_threholding2(maxYtr)
+                maxYext,classext = PW.Classify_using_threholding2(maxYext)
             
-            A, B, C = len(maxYpredtr), len(maxYpredCV), len(maxYpredext)
+            A, B, C = len(maxYtr), len(maxYCV), len(maxYext)
             
-            Ykeep[:A,2*(int(ind_M[6:]))-2] = maxYtruetr
-            Ykeep[:A,2*(int(ind_M[6:]))-1] = maxYpredtr
+            Ykeep[:A,2*(int(ind_M[6:]))-2] = maxYtr[:,0]
+            Ykeep[:A,2*(int(ind_M[6:]))-1] = maxYtr[:,1]
             
-            Ykeep[A+1:A+B+1,2*(int(ind_M[6:]))-2] = maxYtruetr
-            Ykeep[A+1:A+B+1,2*(int(ind_M[6:]))-1] = maxYpredCV
+            Ykeep[A+1:A+B+1,2*(int(ind_M[6:]))-2] = maxYCV[:,0]
+            Ykeep[A+1:A+B+1,2*(int(ind_M[6:]))-1] = maxYCV[:,1]
             
-            Ykeep[A+B+2:A+B+C+2, 2*(int(ind_M[6:]))-2] = maxYtrueext
-            Ykeep[A+B+2:A+B+C+2, 2*(int(ind_M[6:]))-1] = maxYpredext
+            Ykeep[A+B+2:A+B+C+2, 2*(int(ind_M[6:]))-2] = maxYext[:,0]
+            Ykeep[A+B+2:A+B+C+2, 2*(int(ind_M[6:]))-1] = maxYext[:,1]
             
             r2 = np.round(np.mean(mR2),3)
             q2 = np.round(np.mean(mQ2),3)
@@ -339,21 +358,20 @@ def Prediction(XM, Y, ind_ext, user):
             
             if user['Datatype'] == 'Regression':
                 Performance = Performance + PP.ArrayPerformance_sigle_model(ind_M, r2,q2,p2,rmse_tr,rmse_cv,rmse_ext)
-#            elif user['Datatype'] == 'Classification 2 classes':
-#                YpredCVC, classCV = PW.Classify_using_threholding2(YpredCVC, Ytr)
-#                Ypredtr, classtr = PW.Classify_using_threholding2(Ypredtr, Ytr)
-#                Ypredext,classext = PW.Classify_using_threholding2(Ypredext, Yext)
-#                Performance = Performance + PP.ArrayPerformance_class_single_model(ind_M, classCV, classtr, classext)
+            elif user['Datatype'] == 'Classification 2 classes':
+                Performance = Performance + PP.ArrayPerformance_class_single_model(ind_M, classCV, classtr, classext)
 
         YkeepALL[:,:,k] = Ykeep
         PerALL[:,:,k] = Performance
         
     return PP.AnalysisPerformance3D(YkeepALL, PerALL, m_re, user)
 
-def Yscrambling(XM,Y, user):
+def Yscrambling(XM,Y,user):
     if user['Datatype'] == 'Regression':
         CV_Method = user['CV_Method']
         NumPermute = user['NumPermute']
+        Predictor = user['Predictor']
+        import Optimize_Parameters as OP
         import numpy as np
         from scipy import stats
         import Method_SamplingData as MS
@@ -389,8 +407,20 @@ def Yscrambling(XM,Y, user):
                 else:
                     Ytr = YY[indPer-1]
         ##### Cross-validation processing ################# 
-                YpredCV,Q2,RMSE_CV,OptimalPC = PW.CV_Processing(Xtr,Ytr,kf)
-                Ypredtr,R2,RMSE_tr = PW.Train__or_ext_processing(Xtr,Ytr,OptimalPC) 
+                if Predictor == 'PLS':
+                    YpCV,Q2,RMSE_CV,estimator = OP.PLS(Xtr,Ytr,kf,user)
+                    
+                    
+                elif Predictor == 'RF':
+                    YpCV,Q2,RMSE_CV,estimator = OP.RF(Xtr,Ytr,kf,user)
+                    
+                elif Predictor == 'SVM':
+                    YpCV,Q2,RMSE_CV,estimator = OP.SVM(Xtr,Ytr,kf, user)
+                
+                
+                ##############################################################
+                Ytruetr,Ypredtr,R2,RMSE_tr = PW.Prediction_processing(Xtr,Ytr,estimator.fit(Xtr,Ytr)) 
+              
                 RR2.append(R2)
                 QQ2.append(Q2)
             slope, intercept, r_value, p_value, std_err = stats.linregress(RR2,QQ2)
@@ -417,87 +447,50 @@ def Yscrambling(XM,Y, user):
     else:
         return [], []
     
-def CV_Processing(X,Y,kf):
+def Prediction_processing(X,Y,estimator):
     import numpy as np
-    from sklearn.cross_decomposition import PLSRegression
     import PredictivePerformance as PP
-     
-    if X.shape[1] < 10:
-         NumPC = X.shape[1]
-    else:
-        NumPC = 10
-        
-    ArrayYpredCV = np.zeros((len(Y),NumPC+1))
-    rsqured =[]
-        
-    for PC in range(1, NumPC+1):
-        model = PLSRegression(n_components=PC, scale=False)
-                
-        Ytrue, Ypred = [],[]
-        for train,test in kf:
-            Xtrain, Ytrain = X[train], Y[train]
-            Xtest, Ytest = X[test], Y[test]
-            model.fit(Xtrain,Ytrain)
-            Yp = model.predict(Xtest)
-            if len(Yp) > 1:
-                Ypred.extend(np.squeeze(Yp))
-            else:
-                Ypred.extend(Yp)
-            Ytrue.extend(Ytest)
-        r2 = PP.rsquared(Ytrue,Ypred)
-        rsqured.append(r2)
-        ArrayYpredCV[:,PC] = Ypred
-
-    ArrayYpredCV[:,0] = Ytrue               
-    SeriesPRESS = PP.PRESS(ArrayYpredCV)
-    OPC_Q2 = PP.Q2(SeriesPRESS, X.shape[0])
-    OPC_Q2CV = PP.Q2CV(ArrayYpredCV,X.shape[0])
-    Q2, OptimalPC = PP.Decision(rsqured,OPC_Q2,OPC_Q2CV)
-    RMSE_CV = PP.RMSE_Array(ArrayYpredCV,OptimalPC)
-    return ArrayYpredCV, np.round(Q2,3), np.round(RMSE_CV,3), OptimalPC
-    
-def Train__or_ext_processing(X,Y,OptimalPC):
-    import numpy as np
-    from sklearn.cross_decomposition import PLSRegression
-    import PredictivePerformance as PP
-    model = PLSRegression(n_components=OptimalPC, scale=False)
-    model.fit(X, Y)
-    Ypred = np.squeeze(model.predict(X))
+    Ypred = np.squeeze(estimator.predict(X))
+    Ytrue = np.squeeze(Y)
     R2 = PP.rsquared(Y,Ypred)
     RMSE = PP.RMSE(Y, Ypred)
-    return Ypred,np.round(R2,3),np.round(RMSE,3) 
+    return Ytrue, Ypred,np.round(R2,3),np.round(RMSE,3) 
     
-def Classify_using_threholding2(Ypred, Ytrue):
+def Classify_using_threholding2(ArrayY):
     import numpy as np
-    cla = np.unique(Ytrue)
     from sklearn.metrics import matthews_corrcoef
+    
+    Ypred = ArrayY[:,1]
+    YC = np.zeros((len(Ypred),1))
     numYpred = np.unique(np.sort(Ypred))
-    started = np.round(len(numYpred)*0.1,0)
+    start = np.round(len(numYpred)*0.1,0)
     end = np.round(len(numYpred)*0.9,0)
-    Ypredall, results = [],[]
-    for i in range(int(started), int(end)):
-        YpredC = []
-        for j in Ypred:
-            if j >= numYpred[i]:
-                YpredC.append(max(cla))
-            else:
-                YpredC.append(min(cla))
-        Ypredall.append(YpredC)
-        results.append(matthews_corrcoef(Ytrue, YpredC))
+
+    results = []
+    for i in range(int(start), int(end)):
+        YpC = np.zeros((len(Ypred),1))
+        for j in range(len(Ypred)):
+            if Ypred[j] >= numYpred[i]:
+                YpC[j] = 1   
+    
+        results.append(matthews_corrcoef(ArrayY[:,0], YpC))
+        YC = np.append(YC,YpC,axis=1)
+
+
     inx = [ind for ind,val in enumerate(results) if val == max(results)]
-    Ypredall = Ypredall[inx[0]]
+    ArrayY[:,1] = YC[:,inx[0]+1]
     
     from sklearn.metrics import confusion_matrix
     from sklearn.metrics import accuracy_score
     classper = {}
-    matt = confusion_matrix(Ytrue, Ypredall)
+    matt = confusion_matrix(ArrayY[:,0], ArrayY[:,1])
     tp, fp, fn, tn = matt[0,0], matt[0,1], matt[1,0], matt[1,1]
     classper['sens'] = float(tp)/(float(tp)+float(fn))
     classper['spec'] = float(tn)/(float(fp)+float(tn))
-    classper['acc'] = accuracy_score(Ytrue, Ypredall)
-    classper['matthew'] = matthews_corrcoef(Ytrue, Ypredall)
+    classper['acc'] = accuracy_score(ArrayY[:,0], ArrayY[:,1])
+    classper['matthew'] = matthews_corrcoef(ArrayY[:,0], ArrayY[:,1])
     
-    return Ypredall, classper
+    return ArrayY, classper
         
 def Combine_array(NumDes,h, Mean,SD,Ykeep,Q2permute,Scamb,user):
     IndicatorName = user['Indicator']
@@ -519,8 +512,9 @@ def Combine_array(NumDes,h, Mean,SD,Ykeep,Q2permute,Scamb,user):
     Valueuser = [str(k) for k in Valueuser] 
     
     l,v = Listuser, Valueuser
-    L = [l[11],l[8],l[3],l[2],l[6],l[1],l[7],l[0],l[9],l[10],l[5],l[12],l[4]]
-    V = [v[11],v[8],v[3],v[2],v[6],v[1],v[7],v[0],v[9],v[10],v[5],v[12],v[4]]
+    L = [l[11],l[8],l[3],l[2],l[6],l[1],l[13],l[7],l[0],l[9],l[10],l[5],l[12],l[4]]
+    V = [v[11],v[8],v[3],v[2],v[6],v[1],v[13],v[7],v[0],v[9],v[10],v[5],v[12],v[4]]
+
     for ii in range(len(Listuser)):
         worksheet.write(ii,0,L[ii])
         worksheet.write(ii,1,V[ii])

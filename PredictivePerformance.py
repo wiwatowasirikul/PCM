@@ -90,7 +90,7 @@ def RMSE_Array(ArrayYpred, OptimalPC):
     
 def RMSE(Ytrue, Ypred):
     import numpy as np
-    SE = (Ytrue-Ypred)**2
+    SE = (np.array(Ytrue)-np.array(Ypred))**2
     return np.sqrt(np.mean(SE))  
     
 def ArrayPerformance_sigle_model(Model,R2,Q2,Q2ext,RMSE_tr,RMSE_CV,RMSE_ext):

@@ -17,19 +17,21 @@ def ModuleMain():
         Ligand_index = sys.argv[3]  #Ligand index [0-13] (see Descriptors_Extraction.py for more informs)
         Protein_index = sys.argv[4]  #Protein index [0-11] (see Descriptors_Extraction.py for more informs)
         Model_index = sys.argv[5]   #User defined PCM modeling 
-        CV_Method = sys.argv[6]     #k-folds, LOO
-        FeatureSelectionMode = sys.argv[7] #None,VIP
-        SpiltCriteria = float(sys.argv[8]) # 0.15 by default
-        Iteration = int(sys.argv[9])       #20  by default
-        NumPermute = int(sys.argv[10])      # 100  by default
+        Predictor = sys.argv[6]        #PLS or RF (random forest)
+        CV_Method = sys.argv[7]     #k-folds, LOO
+        FeatureSelectionMode = sys.argv[8] #No, Yes
+        SpiltCriteria = float(sys.argv[9]) # 0.15 by default
+        Iteration = int(sys.argv[10])       #20  by default
+        NumPermute = int(sys.argv[11])      # 100  by default
     
     
     import Descriptors_Extraction as Ex
     import PCM_workflow as pcm
 
-    userdefined = Ex.UserDefined(Rawfile,Indicator,Ligand_index,Protein_index, Model_index,
-                             SpiltCriteria,CV_Method,FeatureSelectionMode, Iteration, 
-                             NumPermute)
+    userdefined = Ex.UserDefined(Rawfile,Indicator,Ligand_index,Protein_index, Model_index, 
+                                 Predictor, SpiltCriteria,CV_Method,FeatureSelectionMode, Iteration, 
+                                 NumPermute)
+
     Ex.AnalysisInputfile(userdefined)
     X, Y, H, harray, NumDes = pcm.Model_Selection(userdefined)
     ind_ext = pcm.Index_Train_Ext(X, userdefined)
@@ -43,5 +45,5 @@ if __name__ == '__main__':
     p.start()
    
    
-   ##python Run_Program.py ExampleData Result [0] [0] [0] 10-folds None 0.15 20 100
+   ##python Run_Program.py ExampleData Result [0] [0] [0] PLS 10-folds No 0.15 20 100
        
