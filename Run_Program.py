@@ -3,11 +3,10 @@
 ##                                                                           ## 
 ## Wiwat Owasirikul                                                          ##
 ##     Department of Radiological Technology, MedTech, Mahidol               ##
-## Chanin Nantasenamat                                                       ##
+##Chanin Nantasenamat                                                        ##
 ##      Center of Data mining and bioimformatic, MedTech, Mahidol            ##
-##                                                                           ##
+##Likit                                                                      ##
 ###############################################################################
-
 
 def ModuleMain():
     import sys
@@ -17,7 +16,7 @@ def ModuleMain():
         Ligand_index = sys.argv[3]  #Ligand index [0-13] (see Descriptors_Extraction.py for more informs)
         Protein_index = sys.argv[4]  #Protein index [0-11] (see Descriptors_Extraction.py for more informs)
         Model_index = sys.argv[5]   #User defined PCM modeling 
-        Predictor = sys.argv[6]        #PLS or RF (random forest)
+        Predictor = sys.argv[6]        #PLS, RF(random forest), SVM
         CV_Method = sys.argv[7]     #k-folds, LOO
         FeatureSelectionMode = sys.argv[8] #No, Yes
         SpiltCriteria = float(sys.argv[9]) # 0.15 by default
@@ -43,7 +42,4 @@ if __name__ == '__main__':
     from multiprocessing import Process
     p = Process(target=ModuleMain)
     p.start()
-   
-   
-   ##python Run_Program.py ExampleData Result [0] [0] [0] PLS 10-folds No 0.15 20 100
-       
+   ##python Run_Program.py ExampleData Result [0] [0] [0] PLS 10-folds No 0.15 20 100     

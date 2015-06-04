@@ -133,7 +133,6 @@ def Normalized(var):    #mean centering and scaling
     from sklearn import preprocessing
     return preprocessing.scale(var)
     
-    
 def Inputs_2(First, Header_First, Second, Header_Second):
     import numpy as np
     r, c1 = np.shape(First)

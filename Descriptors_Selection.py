@@ -2,7 +2,7 @@
 """
 Created on Thu Jul 17 09:19:41 2014
 
-@author: Fujitsu
+@author: Wiwat Owasirikul
 """
 
 def VIP(X, Y, H, NumDes, user): 
@@ -11,7 +11,6 @@ def VIP(X, Y, H, NumDes, user):
     import PCM_workflow as PW
     from Descriptors_Selection import Ranking10
     import Optimize_Parameters as OP
-    
     
     print '############## Descriptors selection are being processed ###############'
     M = list(X.viewkeys())
@@ -25,7 +24,7 @@ def VIP(X, Y, H, NumDes, user):
         nrow, ncol = np.shape(XTR)
         
         if user['Predictor'] == 'PLS':
-            YpCV,Q2,RMSE_CV,estimator = OP.PLS(XTR,YTR,kf)
+            YpCV,Q2,RMSE_CV,estimator = OP.PLS(XTR,YTR,kf, user)
     
             Ytruetr,Ypredtr,R2,RMSE_tr = PW.Prediction_processing(XTR,YTR,estimator.fit(XTR,YTR)) 
             x_scores = estimator.x_scores_
@@ -75,7 +74,6 @@ def VIP(X, Y, H, NumDes, user):
                 A = X_new[:,i]
                 idx_keep.extend([ind for ind,val in enumerate(np.transpose(XTR)) if (val==A).all()])
             
-            
         idxDes = NumDes[int(kk[6:])-1,:]
         L,P,LxP,LxL,PxP = [],[],[],[],[] 
         for idx in idx_keep:
@@ -106,7 +104,6 @@ def VIP(X, Y, H, NumDes, user):
         
     return X_VIP, Y_VIP, H_VIP, HArray, NumDesVIP
     
-    
 def Ranking10(index, value):
      ##### Reduction of descriptor into the highest 10 order #########
     mapp = []        
@@ -119,10 +116,8 @@ def Ranking10(index, value):
     idx_keep = []
     for pp in range(len(mapp_select)):
         idx_keep.append(mapp_select[pp][1])
-    
     return idx_keep
 
-    
 def VarinceThreshold(X):
     import numpy as np
     STDEV = np.std(X, axis=0)
@@ -196,6 +191,4 @@ def VIP_origin(X, Y, H):
     H_VIP = np.squeeze(np.array(H))[idx_keep]
     X_VIP = Xtrain[:,idx_keep]   
     Y_VIP = Ytrain
-  
     return X_VIP, Y_VIP, H_VIP
-    

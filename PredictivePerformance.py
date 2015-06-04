@@ -131,7 +131,7 @@ def AnalysisPerformance3D(YkeepAll, SumPer, m_re, user):
         D = np.unique(D[0])
 
     Y = YkeepAll[:,:,D[0]]
-    
+
     H = []
     for p in range(13):
         H.append('YtrueM'+str(p+1))
@@ -140,13 +140,30 @@ def AnalysisPerformance3D(YkeepAll, SumPer, m_re, user):
     hM =  np.reshape(np.array(H),(1,len(H)))
     Ykeep = np.append(hM,Y,axis=0)
     
+    ############### Eliminate unwanted data ############################
+    MI = range(1,14)
+    for MII in user['Model_index']:
+        if int(MII) == 0:
+            MIval = []
+        else:
+            MIval = [val for ind,val in enumerate(MI) if val!=int(MII)] 
+    for v in MIval:  
+        Ykeep[1:,2*v-1] = ''
+        Ykeep[1:,2*v-2] = ''
+    for MIII in user['Model_index']:
+        AA = Ykeep[:,2*int(MIII)-1]
+        indminus = [ind for ind,val in enumerate(AA) if val=='-1.0']
+        Ykeep[indminus,2*int(MII)-1] = ''
+        Ykeep[indminus,2*int(MII)-2] = ''
+    ####################################################################
+    
     path = user['Root']
     IndicatorName = user['Indicator'] 
     try:
         os.makedirs(path+'/'+IndicatorName+'/parameters')
     except OSError:
         pass
-            
+    
     return np.mean(SumPer, axis=2), np.std(SumPer, axis=2), Ykeep
     
 def ArrayPerformance_class_single_model(Model, classCV, classtr, classext):
@@ -165,3 +182,25 @@ def ArrayPerformance_class_single_model(Model, classCV, classtr, classext):
     Array[int(Model[6:])-1,10] = round(classCV['matthew'],3)
     Array[int(Model[6:])-1,11] = round(classext['matthew'],3)
     return Array
+    
+def Performance_class(ArrayY):
+    from sklearn.metrics import confusion_matrix
+    from sklearn.metrics import accuracy_score
+    from sklearn.metrics import matthews_corrcoef
+    classper = {}
+    matt = confusion_matrix(ArrayY[:,0], ArrayY[:,1])
+    tp, fp, fn, tn = matt[0,0], matt[0,1], matt[1,0], matt[1,1]
+    if tp == 0 and fn == 0:
+        classper['sens'] = float(0)
+        classper['spec'] = float(tn)/(float(fp)+float(tn))
+    elif tn == 0  and fp == 0:
+        classper['sens'] = float(tp)/(float(tp)+float(fn))
+        classper['spec'] = float(0)
+    else:
+        classper['sens'] = float(tp)/(float(tp)+float(fn))
+        classper['spec'] = float(tn)/(float(fp)+float(tn))
+        
+    classper['acc'] = accuracy_score(ArrayY[:,0], ArrayY[:,1])
+    classper['matthew'] = matthews_corrcoef(ArrayY[:,0], ArrayY[:,1])
+    
+    return ArrayY, classper

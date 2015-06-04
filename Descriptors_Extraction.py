@@ -2,7 +2,7 @@
 """
 Created on Fri Jun 13 10:08:00 2014
 
-@author: Fujitsu
+@author: Wiwat Owasirikul
 """
 def UserDefined(Rawfile,Indicator,Ligand_index,Protein_index, Model_index,Predictor,SpiltCriteria,
                CV_Method,FeatureSelectionMode, Iteration, NumPermute):
@@ -145,7 +145,6 @@ def AnalysisInputfile(user):
                 for k in range(len(Array)):
                     spam.writerow(Array[k])
    
-    
 def Ligand_gen(data, Ligandgroup):
     import numpy as np
     from pydpi.pydrug import PyDrug
@@ -199,7 +198,6 @@ def Ligand_gen(data, Ligandgroup):
     D_ligand = np.zeros((len(data),len(HL_list)), dtype=float)
     for k in range(len(data)):
         D_ligand[k,:] = D_list[k]   
-    
     
     #Variance threshold       std > 0.01  
     import Descriptors_Selection as DesSe

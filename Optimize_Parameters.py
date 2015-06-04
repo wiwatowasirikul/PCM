@@ -2,7 +2,7 @@
 """
 Created on Tue May 19 09:34:42 2015
 
-@author: Fujitsu
+@author: Wiwat Owasirikul
 """
 
 def PLS(X,Y,kf,user):
@@ -11,7 +11,6 @@ def PLS(X,Y,kf,user):
     import PredictivePerformance as PP
     import Optimize_Parameters as OP
     
-     
     if X.shape[1] < 10:
          NumPC = X.shape[1]
     else:
@@ -44,12 +43,13 @@ def RF(X,Y,kf,user):
     from sklearn.grid_search import GridSearchCV
     import numpy as np
     
-    ntree = np.array(range(10,100,10))
+    ntree = np.array([10])
+#    ntree = np.array(range(10,100,10))
     param_grid = dict(n_estimators = ntree)
     if user['Datatype'] == 'Regression':
         from sklearn.ensemble.forest import RandomForestRegressor
         grid = GridSearchCV(RandomForestRegressor(), param_grid, cv=kf)
-    elif user['Datatype'] == 'Classification':
+    elif user['Datatype'] == 'Classification 2 classes':
         from sklearn.ensemble.forest import RandomForestClassifier
         estimator = RandomForestClassifier()
         grid = GridSearchCV(RandomForestClassifier(), param_grid, cv=kf)
@@ -64,8 +64,10 @@ def SVM(X,Y,kf,user):
     import numpy as np
     import Optimize_Parameters as OP
     
-    C_range = np.logspace(-2,10,13)
-    gamma_range = np.logspace(-9,3,13)
+    C_range = np.array([1])
+    gamma_range = np.array([0])
+#    C_range = np.logspace(-2,10,13)
+#    gamma_range = np.logspace(-9,3,13)
     param_grid = dict(gamma=gamma_range, C=C_range) 
     
     if user['Datatype'] == 'Regression':

@@ -2,7 +2,7 @@
 """
 Created on Fri Jul 18 12:18:21 2014
 
-@author: Fujitsu
+@author: Wiwat Owasirikul
 """
 
 def PCA(X, Expect_ext):
@@ -22,7 +22,6 @@ def PCA(X, Expect_ext):
             labels.append(3)
     return labels
  
-
 def KMean(X, Expect_ext):
     from sklearn.cluster import KMeans       
     k_means = KMeans(n_clusters=Expect_ext)
