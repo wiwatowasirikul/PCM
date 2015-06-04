@@ -166,24 +166,20 @@ def Ligand_gen(data, Ligandgroup):
             elif j == '3':    #connectivity    44
                 res = drug.GetConnectivity()
             elif j == '4':    #E-state         237
-                res = drug.GetEstate()
-            elif j == '5':    #kappa            7
                 res = drug.GetKappa()
-            elif j == '6':    #Burden           64
-                res = drug.GetBurden()
-            elif j == '7':    #information      21
-                res = drug.GetBasak()
-            elif j == '8':    #Moreau-Boto      32
+            elif j == '5':    #kappa            7
+                res = drug.GetEstate()
+            elif j == '6':    #Moreau-Boto      32
                 res = drug.GetMoreauBroto()
-            elif j == '9':    #Moran            32
+            elif j == '7':    #Moran            32
                 res = drug.GetMoran()
-            elif j == '10':   #Geary            32
+            elif j == '8':   #Geary            32
                 res = drug.GetGeary()
-            elif j == '11':   #charge           25
+            elif j == '9':   #charge           25
                 res = drug.GetCharge()
-            elif j == '12':   #property          6
+            elif j == '10':   #property          6
                 res = drug.GetMolProperty()
-            elif j == '13':   #MOE-type          60
+            elif j == '11':   #MOE-type          60
                 res = drug.GetMOE()
             
             keys.extend(res.viewkeys())
