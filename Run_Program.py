@@ -39,7 +39,6 @@ def ModuleMain():
     pcm.Combine_array(NumDes, harray, Mean, SD, Ykeep, Q2_intercept, Scamb, userdefined)   
 
 if __name__ == '__main__':
-    from multiprocessing import Process
-    p = Process(target=ModuleMain)
-    p.start()
+    ModuleMain()
+
    ##python Run_Program.py ExampleData Result [0] [0] [0] PLS 10-folds No 0.15 20 100     

@@ -250,15 +250,12 @@ def Index_Train_Ext(X, user):
     
 def Prediction(XM, Y, ind_ext, user):
     Criteria = user['Spiltcriteria']
-    CV_Method = user['CV_Method']
     Iter = user['Iteration']
     Predictor = user['Predictor']
     import numpy as np
-    import Method_SamplingData as MS
     import PredictivePerformance as PP
     import PCM_workflow as PW 
     from sklearn import cross_validation 
-    import Optimize_Parameters as OP
     
     print '############## Prediction is being processed ###############'
     M = list(XM.viewkeys())
@@ -292,38 +289,8 @@ def Prediction(XM, Y, ind_ext, user):
         for ind_M in m_re:
             print ind_M +' is being processed'   ## Model selection
             X = XM[ind_M] 
-         
-            mR2, mQ2, mP2, mRMSE_tr, mRMSE_CV, mRMSE_ext = [],[],[],[],[],[]
-            mYptr, mYpCV, mYpext = [],[],[]
-
-            for TR, ext in kfext:   ##Inner cross-validation
-                
-                XTR, YTR = X[TR], Y[TR]
-                Xext,Yext = X[ext], Y[ext]
-                kf = MS.CV_determination(YTR,CV_Method)
-                
-                #######################  CV processing #######################
-                if Predictor == 'PLS':
-                    YpCV,Q2,RMSE_CV,estimator = OP.PLS(XTR,YTR,kf,user)
-                    
-                elif Predictor == 'RF':
-                    YpCV,Q2,RMSE_CV,estimator = OP.RF(XTR,YTR,kf,user)
-                    
-                elif Predictor == 'SVM':
-                    YpCV,Q2,RMSE_CV,estimator = OP.SVM(XTR,YTR,kf, user)
-                ##############################################################
-                
-                Ytruetr,Ypredtr,R2,RMSE_tr = PW.Prediction_processing(XTR,YTR,estimator.fit(XTR,YTR)) 
-                Ytrueext,Ypredext,P2,RMSE_ext = PW.Prediction_processing(Xext,Yext,estimator.fit(XTR,YTR)) 
-                
-                Yptr = np.append(np.reshape(Ytruetr,(len(Ytruetr),1)),np.reshape(Ypredtr,(len(Ypredtr),1)),axis=1)
-                Ypext = np.append(np.reshape(Ytrueext,(len(Ytrueext),1)),np.reshape(Ypredext,(len(Ypredext),1)),axis=1)
-                
-                #################### Keep performance ########################
-                mR2.append(R2), mQ2.append(Q2), mP2.append(P2)
-                mRMSE_tr.append(RMSE_tr), mRMSE_CV.append(RMSE_CV), mRMSE_ext.append(RMSE_ext)
-                
-                mYptr.append(Yptr), mYpCV.append(YpCV), mYpext.append(Ypext)
+            ##Inner cross-validation
+            mR2, mQ2, mP2, mRMSE_tr, mRMSE_CV, mRMSE_ext, mYptr, mYpCV, mYpext = PW.multiprocess_InnerCV(X,Y,kfext,user)
 
             iMaxQ2 = [ind for ind, val in enumerate(mQ2) if val == np.max(mQ2)]
             maxYtr = mYptr[iMaxQ2[0]]
@@ -376,17 +343,60 @@ def Prediction(XM, Y, ind_ext, user):
         PerALL[:,:,k] = Performance
         
     return PP.AnalysisPerformance3D(YkeepALL, PerALL, m_re, user)
+    
+def InnerCV(X,Y,TR,ext, user):
+    CV_Method = user['CV_Method']
+    Predictor = user['Predictor']
+    import Method_SamplingData as MS
+    import Optimize_Parameters as OP
+    import PCM_workflow as PW 
+    import numpy as np
+
+    XTR, YTR = X[TR], Y[TR]
+    Xext,Yext = X[ext], Y[ext]
+    kf = MS.CV_determination(YTR,CV_Method)
+                
+    #######################  CV processing #######################
+    if Predictor == 'PLS':
+        YpCV,Q2,RMSE_CV,estimator = OP.PLS(XTR,YTR,kf,user)
+            
+    elif Predictor == 'RF':
+        YpCV,Q2,RMSE_CV,estimator = OP.RF(XTR,YTR,kf,user)
+                    
+    elif Predictor == 'SVM':
+        YpCV,Q2,RMSE_CV,estimator = OP.SVM(XTR,YTR,kf, user)
+        ##############################################################
+                
+    Ytruetr,Ypredtr,R2,RMSE_tr = PW.Prediction_processing(XTR,YTR,estimator.fit(XTR,YTR)) 
+    Ytrueext,Ypredext,P2,RMSE_ext = PW.Prediction_processing(Xext,Yext,estimator.fit(XTR,YTR)) 
+                
+    Yptr = np.append(np.reshape(Ytruetr,(len(Ytruetr),1)),np.reshape(Ypredtr,(len(Ypredtr),1)),axis=1)
+    Ypext = np.append(np.reshape(Ytrueext,(len(Ytrueext),1)),np.reshape(Ypredext,(len(Ypredext),1)),axis=1)
+        
+    return Q2,R2,P2,RMSE_tr,RMSE_CV,RMSE_ext,Yptr,YpCV,Ypext
+        
+def multiprocess_InnerCV(X,Y,kfext,user):
+    import multiprocessing as mp
+    pool = mp.Pool(processes=mp.cpu_count())
+    results = [pool.apply_async(InnerCV,args=(X,Y,TR,ext,user)) for TR,ext in kfext]
+    result = [p.get() for p in results]
+    
+    mR2, mQ2, mP2, mRMSE_tr, mRMSE_CV, mRMSE_ext = [],[],[],[],[],[]
+    mYptr, mYpCV, mYpext = [],[],[]
+    for i in range(len(result)):
+        mR2.append(result[i][0]), mQ2.append(result[i][1]), mP2.append(result[i][2])
+        mRMSE_tr.append(result[i][3]), mRMSE_CV.append(result[i][4]), mRMSE_ext.append(result[i][5])
+        mYptr.append(result[i][6]), mYpCV.append(result[i][7]), mYpext.append(result[i][8])
+    return mR2, mQ2, mP2, mRMSE_tr, mRMSE_CV, mRMSE_ext, mYptr, mYpCV, mYpext 
 
 def Yscrambling(XM,Y,user):
     if user['Datatype'] == 'Regression':
         CV_Method = user['CV_Method']
         NumPermute = user['NumPermute']
-        Predictor = user['Predictor']
-        import Optimize_Parameters as OP
+
         import numpy as np
         from scipy import stats
         import Method_SamplingData as MS
-        import PCM_workflow as PW
     
         print '############## Yscambling is being processed ###############'
         YY = []
@@ -396,7 +406,13 @@ def Yscrambling(XM,Y,user):
                 pass
             else:
                 YY.append(Ypermute)
-            
+        YYY = []
+        for indPer in range(len(YY)+1):
+            if indPer == 0:
+                YYY.append(Y)
+            else:
+                YYY.append(YY[indPer-1])
+
         M = list(XM.viewkeys())  
         m_re = []
         for m in M:
@@ -409,30 +425,7 @@ def Yscrambling(XM,Y,user):
             print ind_M +'....'
             Xtr = XM[ind_M]
             kf = MS.CV_determination(Y,CV_Method)
-            
-            RR2,QQ2 = [],[]
-            for indPer in range(len(YY)+1):
-                print "%s: %d%%" % ("Processing", (float(indPer)/len(YY))*100)
-                if indPer == 0:
-                    Ytr = Y
-                else:
-                    Ytr = YY[indPer-1]
-                ##### Cross-validation processing ################# 
-                if Predictor == 'PLS':
-                    YpCV,Q2,RMSE_CV,estimator = OP.PLS(Xtr,Ytr,kf,user)
-                    
-                    
-                elif Predictor == 'RF':
-                    YpCV,Q2,RMSE_CV,estimator = OP.RF(Xtr,Ytr,kf,user)
-                    
-                elif Predictor == 'SVM':
-                    YpCV,Q2,RMSE_CV,estimator = OP.SVM(Xtr,Ytr,kf, user)
-                ###################################################
-                    
-                Ytruetr,Ypredtr,R2,RMSE_tr = PW.Prediction_processing(Xtr,Ytr,estimator.fit(Xtr,Ytr)) 
-              
-                RR2.append(R2)
-                QQ2.append(Q2)
+            RR2,QQ2 = multiprocess_Yscamp(Xtr,YYY,kf, user)
             slope, intercept, r_value, p_value, std_err = stats.linregress(RR2,QQ2)
             
             iR2 = -float(intercept)/float(slope)
@@ -467,6 +460,37 @@ def Yscrambling(XM,Y,user):
         return Q2_intercept, hM
     else:
         return [], []
+        
+def Yscamp_mp(Xtr,Ytr,kf,user):
+    Predictor = user['Predictor']
+    import Optimize_Parameters as OP
+    import PCM_workflow as PW
+    ##### Cross-validation processing ################# 
+    if Predictor == 'PLS':
+        YpCV,Q2,RMSE_CV,estimator = OP.PLS(Xtr,Ytr,kf,user)
+                    
+    elif Predictor == 'RF':
+        YpCV,Q2,RMSE_CV,estimator = OP.RF(Xtr,Ytr,kf,user)
+                    
+    elif Predictor == 'SVM':
+        YpCV,Q2,RMSE_CV,estimator = OP.SVM(Xtr,Ytr,kf, user)
+    ###################################################
+    Ytruetr,Ypredtr,R2,RMSE_tr = PW.Prediction_processing(Xtr,Ytr,estimator.fit(Xtr,Ytr)) 
+    return R2, Q2
+
+def multiprocess_Yscamp(X,YY,kf, user):
+    import multiprocessing as mp
+    pool = mp.Pool(processes=mp.cpu_count())
+    results = [pool.apply_async(Yscamp_mp,args=(X,Y,kf,user)) for Y in YY]
+    result=[]    
+    for p in results:
+        result.append(p.get())
+        print "%s: %d%%" % ("Processing", (float(len(result))/len(YY))*100)
+
+    RR2,QQ2 =[],[]
+    for i in range(len(result)):
+        RR2.append(result[i][0]), QQ2.append(result[i][1]),
+    return RR2, QQ2
     
 def Prediction_processing(X,Y,estimator):
     import numpy as np
@@ -475,7 +499,7 @@ def Prediction_processing(X,Y,estimator):
     Ytrue = np.squeeze(Y)
     R2 = PP.rsquared(Y,Ypred)
     RMSE = PP.RMSE(Y, Ypred)
-    return Ytrue, Ypred,np.round(R2,3),np.round(RMSE,3) 
+    return Ytrue, Ypred,np.round(R2,3),np.round(RMSE,3)
     
 def Classify_using_threholding2(ArrayY):
     import numpy as np
