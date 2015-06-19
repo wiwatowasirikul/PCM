@@ -43,8 +43,8 @@ def RF(X,Y,kf,user):
     from sklearn.grid_search import GridSearchCV
     import numpy as np
     
-    ntree = np.array([10])
-#    ntree = np.array(range(10,100,10))
+#    ntree = np.array([10])
+    ntree = np.array(range(10,100,10))
     param_grid = dict(n_estimators = ntree)
     if user['Datatype'] == 'Regression':
         from sklearn.ensemble.forest import RandomForestRegressor
@@ -66,8 +66,8 @@ def SVM(X,Y,kf,user):
     
     C_range = np.array([1])
     gamma_range = np.array([0])
-#    C_range = np.logspace(-2,10,13)
-#    gamma_range = np.logspace(-9,3,13)
+#    C_range = np.logspace(-20,20,20)
+#    gamma_range = np.logspace(-20,20,20)
     param_grid = dict(gamma=gamma_range, C=C_range) 
     
     if user['Datatype'] == 'Regression':

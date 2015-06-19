@@ -273,7 +273,8 @@ def Prediction(XM, Y, ind_ext, user):
     if user['Datatype'] == 'Regression':
         PerALL = np.zeros((13,6,Iter))
     elif user['Datatype'] == 'Classification 2 classes':
-        PerALL = np.zeros((13,12,Iter))
+        PerALL = np.zeros((13,9,Iter))
+
         
     K = int(np.round(1/Criteria))
         
@@ -284,7 +285,7 @@ def Prediction(XM, Y, ind_ext, user):
         if user['Datatype'] == 'Regression':
             Performance = np.zeros((13,6))
         elif user['Datatype'] == 'Classification 2 classes':
-            Performance = np.zeros((13,12))
+            Performance = np.zeros((13,9))
 
         Ykeep = np.zeros((2*len(Y),26))
 
@@ -539,9 +540,9 @@ def Combine_array(NumDes,h, Mean,SD,Ykeep,Q2permute,Scamb,user):
     
     if user['Datatype'] == 'Regression':
         array_mean_SD_Q = np.append(array_mean_SD,Q2permute,axis=1)   
-        Mlist = ['R2','Q2','Q2ext','RMSE_tr','RMSE_CV','RMSE_ext', 'iR^2','iQ^2']
+        Mlist = ['R^2','Q^2','P^2','RMSE_tr','RMSE_CV','RMSE_ext', 'iR^2','iQ^2']
     elif user['Datatype'] == 'Classification 2 classes':
-        Mlist = ['accTr','accCv','accExt','senTr','senCv','senExt','specTr','specCv','specExt','mattTr','mattCv','mattExt']
+        Mlist = ['accTr','accCv','accExt','aucTr','aucCv','aucExt','mattTr','mattCv','mattExt']
         array_mean_SD_Q  = array_mean_SD
     hM =  np.reshape(np.array(Mlist),(1,len(Mlist)))
     hM = np.append(hM,array_mean_SD_Q,axis=0)

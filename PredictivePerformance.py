@@ -168,38 +168,24 @@ def AnalysisPerformance3D(YkeepAll, SumPer, m_re, user):
     
 def ArrayPerformance_class_single_model(Model, classCV, classtr, classext):
     import numpy as np
-    Array = np.zeros((13,12))
+    Array = np.zeros((13,9))
     Array[int(Model[6:])-1,0] = round(classtr['acc'],3)
     Array[int(Model[6:])-1,1] = round(classCV['acc'],3)
     Array[int(Model[6:])-1,2] = round(classext['acc'],3)
-    Array[int(Model[6:])-1,3] = round(classtr['sens'],3)
-    Array[int(Model[6:])-1,4] = round(classCV['sens'],3)
-    Array[int(Model[6:])-1,5] = round(classext['sens'],3)
-    Array[int(Model[6:])-1,6] = round(classtr['spec'],3)
-    Array[int(Model[6:])-1,7] = round(classCV['spec'],3)
-    Array[int(Model[6:])-1,8] = round(classext['spec'],3)
-    Array[int(Model[6:])-1,9] = round(classtr['matthew'],3)
-    Array[int(Model[6:])-1,10] = round(classCV['matthew'],3)
-    Array[int(Model[6:])-1,11] = round(classext['matthew'],3)
+    Array[int(Model[6:])-1,3] = round(classtr['auc'],3)
+    Array[int(Model[6:])-1,4] = round(classCV['auc'],3)
+    Array[int(Model[6:])-1,5] = round(classext['auc'],3)
+    Array[int(Model[6:])-1,6] = round(classtr['matthew'],3)
+    Array[int(Model[6:])-1,7] = round(classCV['matthew'],3)
+    Array[int(Model[6:])-1,8] = round(classext['matthew'],3)
     return Array
     
 def Performance_class(ArrayY):
-    from sklearn.metrics import confusion_matrix
     from sklearn.metrics import accuracy_score
     from sklearn.metrics import matthews_corrcoef
+    from sklearn.metrics import roc_auc_score
     classper = {}
-    matt = confusion_matrix(ArrayY[:,0], ArrayY[:,1])
-    tp, fp, fn, tn = matt[0,0], matt[0,1], matt[1,0], matt[1,1]
-    if tp == 0 and fn == 0:
-        classper['sens'] = float(0)
-        classper['spec'] = float(tn)/(float(fp)+float(tn))
-    elif tn == 0  and fp == 0:
-        classper['sens'] = float(tp)/(float(tp)+float(fn))
-        classper['spec'] = float(0)
-    else:
-        classper['sens'] = float(tp)/(float(tp)+float(fn))
-        classper['spec'] = float(tn)/(float(fp)+float(tn))
-        
+    classper['auc'] = roc_auc_score(ArrayY[:,0], ArrayY[:,1]) 
     classper['acc'] = accuracy_score(ArrayY[:,0], ArrayY[:,1])
     classper['matthew'] = matthews_corrcoef(ArrayY[:,0], ArrayY[:,1])
     
