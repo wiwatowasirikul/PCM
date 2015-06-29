@@ -30,15 +30,19 @@ def ModuleMain():
     userdefined = Ex.UserDefined(Rawfile,Indicator,Ligand_index,Protein_index, Model_index, 
                                  Predictor, SpiltCriteria,CV_Method,FeatureSelectionMode, Iteration, 
                                  NumPermute)
-
+                            
     Ex.AnalysisInputfile(userdefined)
     X, Y, H, harray, NumDes = pcm.Model_Selection(userdefined)
     ind_ext = pcm.Index_Train_Ext(X, userdefined)
     Mean, SD, Ykeep = pcm.Prediction(X,Y,ind_ext, userdefined)
     Q2_intercept, Scamb = pcm.Yscrambling(X,Y, userdefined)
-    pcm.Combine_array(NumDes, harray, Mean, SD, Ykeep, Q2_intercept, Scamb, userdefined)   
-
+    pcm.Combine_array(NumDes, harray, Mean, SD, Ykeep, Q2_intercept, Scamb, userdefined)
+    
 if __name__ == '__main__':
+    import time 
+    start_time = time.time()
     ModuleMain()
+    elaped_time = time.time()-start_time
+    print elaped_time
 
    ##python Run_Program.py ExampleData Result [0] [0] [0] PLS 10-folds No 0.15 20 100     

@@ -55,7 +55,7 @@ def AnalysisInputfile(user):
         user['Datatype'] = 'Regression'
     else: 
         user['Datatype'] = 'Classification ' + str(len(Yunique)) + ' classes'
-        
+    
     if Ligandgroup == [''] and Proteingroup == ['']:  ### NO building descriptor ####
         print 'All Descriptors were prepared by user'
         ise = [ind for ind,val in enumerate(h) if val == '']

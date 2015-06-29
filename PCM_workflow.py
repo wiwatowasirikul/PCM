@@ -9,7 +9,7 @@ def Xval_nonPCM(X,h,Y,user):
     import numpy as np
     path = user['Root'] 
     IndicatorName = user['Indicator']
-    
+    X = X.astype(np.float)
     XX = {}
     XX['X'] = X
     XX['H'] = h
@@ -21,6 +21,7 @@ def Xval_nonPCM(X,h,Y,user):
         os.makedirs(path+'/'+IndicatorName+'/XVAL')
     except OSError:
         pass
+    
             
     Xval_path = path+'/'+IndicatorName+'/XVAL'
             
@@ -366,7 +367,7 @@ def InnerCV(X,Y,TR,ext, user):
     elif Predictor == 'SVM':
         YpCV,Q2,RMSE_CV,estimator = OP.SVM(XTR,YTR,kf, user)
         ##############################################################
-                
+    
     Ytruetr,Ypredtr,R2,RMSE_tr = PW.Prediction_processing(XTR,YTR,estimator.fit(XTR,YTR)) 
     Ytrueext,Ypredext,P2,RMSE_ext = PW.Prediction_processing(Xext,Yext,estimator.fit(XTR,YTR)) 
                 
@@ -376,8 +377,10 @@ def InnerCV(X,Y,TR,ext, user):
     return Q2,R2,P2,RMSE_tr,RMSE_CV,RMSE_ext,Yptr,YpCV,Ypext
         
 def multiprocess_InnerCV(X,Y,kfext,user):
+    import numpy as np
+    X = X.astype(np.float)
     import multiprocessing as mp
-    pool = mp.Pool(processes=mp.cpu_count())
+    pool = mp.Pool(processes=1)
     results = [pool.apply_async(InnerCV,args=(X,Y,TR,ext,user)) for TR,ext in kfext]
     result = [p.get() for p in results]
     
